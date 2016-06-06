@@ -78,6 +78,64 @@
     }
   },
   {
+    "id": "jetty-default",
+    "creator": "ide",
+    "name": "JettyDemo",
+    "description": "Custom stack for JUG demo.",
+    "scope": "general",
+    "tags": [
+      "Jetty"
+    ],
+    "components": [
+    ],
+    "source": {
+      "type": "image",
+      "origin": "florentbenoit/jetty-stack"
+    },
+    "workspaceConfig": {
+      "environments": [
+        {
+          "name": "default",
+          "recipe": null,
+          "machineConfigs": [
+            {
+              "name": "default",
+              "limits": {
+                "ram": 2000
+              },
+              "source": {
+                "location": "stub",
+                "type": "recipe"
+              },
+              "type": "docker",
+              "dev": true
+            }
+          ]
+        }
+      ],
+      "name": "default",
+      "defaultEnv": "default",
+      "description": null
+    },
+    "permissions": {
+      "groups": [
+        {
+          "acl": [
+            "read",
+            "search"
+          ],
+          "name": "public"
+        }
+      ],
+      "users": {}
+    },
+    "stackIcon": {
+      "name": "jetty-logo.svg",
+      "mediaType": "image/svg+xml"
+    }
+  },
+
+  {
     "id": "blank-default",
     "creator": "ide",
     "name": "Blank",
