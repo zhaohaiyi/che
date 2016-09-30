@@ -11,6 +11,7 @@
 package org.eclipse.che.ide.extension.machine.client.perspective.widgets.machine.appliance.server;
 
 import org.eclipse.che.api.machine.shared.dto.ServerDto;
+import org.eclipse.che.api.machine.shared.dto.ServerPropertiesDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,48 +27,42 @@ import static org.mockito.Mockito.when;
  * @author Dmitry Shnurenko
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ServerTest {
+public class ServerEntityTest {
 
     private static final String SOME_TEXT = "someText";
 
     @Mock
     private ServerDto descriptor;
 
-    private Server server;
+    @Mock
+    private ServerPropertiesDto descriptor2;
+
+    private ServerEntity serverEntity;
 
     @Before
     public void setUp() {
-        server = new Server(SOME_TEXT, descriptor);
+        serverEntity = new ServerEntity(SOME_TEXT, descriptor);
     }
 
     @Test
     public void exposedPortShouldBeReturned() {
-        assertThat(server.getPort(), equalTo(SOME_TEXT));
+        assertThat(serverEntity.getPort(), equalTo(SOME_TEXT));
     }
 
     @Test
     public void addressShouldBeReturned() {
         when(descriptor.getAddress()).thenReturn(SOME_TEXT);
 
-        assertThat(server.getAddress(), equalTo(SOME_TEXT));
+        assertThat(serverEntity.getAddress(), equalTo(SOME_TEXT));
 
         verify(descriptor).getAddress();
-    }
-
-    @Test
-    public void pathShouldBeReturned() {
-        when(descriptor.getPath()).thenReturn(SOME_TEXT);
-
-        assertThat(server.getPath(), equalTo(SOME_TEXT));
-
-        verify(descriptor).getPath();
     }
 
     @Test
     public void urlShouldBeReturned() {
         when(descriptor.getUrl()).thenReturn(SOME_TEXT);
 
-        assertThat(server.getUrl(), equalTo(SOME_TEXT));
+        assertThat(serverEntity.getUrl(), equalTo(SOME_TEXT));
 
         verify(descriptor).getUrl();
     }
@@ -76,9 +71,41 @@ public class ServerTest {
     public void refShouldBeReturned() {
         when(descriptor.getRef()).thenReturn(SOME_TEXT);
 
-        assertThat(server.getRef(), equalTo(SOME_TEXT));
+        assertThat(serverEntity.getRef(), equalTo(SOME_TEXT));
 
         verify(descriptor).getRef();
     }
 
+    @Test
+    public void pathShouldBeReturned() {
+        when(descriptor.getProperties()).thenReturn(descriptor2);
+        when(descriptor2.getPath()).thenReturn(SOME_TEXT);
+
+        assertThat(serverEntity.getProperties().getPath(), equalTo(SOME_TEXT));
+
+        verify(descriptor).getProperties();
+        verify(descriptor2).getPath();
+    }
+
+    @Test
+    public void internalAddressShouldBeReturned() {
+        when(descriptor.getProperties()).thenReturn(descriptor2);
+        when(descriptor2.getInternalAddress()).thenReturn(SOME_TEXT);
+
+        assertThat(serverEntity.getProperties().getInternalAddress(), equalTo(SOME_TEXT));
+
+        verify(descriptor).getProperties();
+        verify(descriptor2).getInternalAddress();
+    }
+
+    @Test
+    public void internalUrlShouldBeReturned() {
+        when(descriptor.getProperties()).thenReturn(descriptor2);
+        when(descriptor2.getInternalUrl()).thenReturn(SOME_TEXT);
+
+        assertThat(serverEntity.getProperties().getInternalUrl(), equalTo(SOME_TEXT));
+
+        verify(descriptor).getProperties();
+        verify(descriptor2).getInternalUrl();
+    }
 }

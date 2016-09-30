@@ -13,22 +13,24 @@ package org.eclipse.che.ide.extension.machine.client.perspective.widgets.machine
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
-import org.eclipse.che.api.machine.shared.dto.ServerDto;
+import org.eclipse.che.api.core.model.machine.Server;
+import org.eclipse.che.api.core.model.machine.ServerProperties;
 
 import javax.validation.constraints.NotNull;
+import java.util.Objects;
 
 /**
  * The class which describes entity which store information of current server.
  *
  * @author Dmitry Shnurenko
  */
-public class Server implements org.eclipse.che.api.core.model.machine.Server {
+public class ServerEntity implements Server {
 
+    private final Server descriptor;
     private final String    port;
-    private final ServerDto descriptor;
 
     @Inject
-    public Server(@Assisted String port, @Assisted ServerDto descriptor) {
+    public ServerEntity(@Assisted String port, @Assisted Server descriptor) {
         this.port = port;
         this.descriptor = descriptor;
     }
@@ -61,7 +63,32 @@ public class Server implements org.eclipse.che.api.core.model.machine.Server {
     }
 
     @Override
-    public String getPath() {
-        return descriptor.getPath();
+    public ServerProperties getProperties() {
+        return new ServerPropertiesImpl(descriptor.getProperties());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ServerEntity)) return false;
+        ServerEntity other = (ServerEntity)o;
+        return Objects.equals(descriptor, other.descriptor) &&
+               Objects.equals(port, other.port);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = hash * 31 + Objects.hashCode(descriptor);
+        hash = hash * 31 + Objects.hashCode(port);
+        return hash;
+    }
+
+    @Override
+    public String toString() {
+        return "Server{" +
+               "descriptor=" + descriptor +
+               ", port='" + port + '\'' +
+               '}';
     }
 }
