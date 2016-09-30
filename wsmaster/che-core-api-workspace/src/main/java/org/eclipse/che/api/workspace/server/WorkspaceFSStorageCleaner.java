@@ -11,7 +11,7 @@
 package org.eclipse.che.api.workspace.server;
 
 /**
- * This component removes workspace folder from workspace storage. It's used for "delete workspace" operation
+ * This component removes workspace folder with user's projects after delete workspace operation.
  * (see more {@link WorkspaceService#delete}).
  *
  * @author Alexander Andrienko
@@ -19,7 +19,8 @@ package org.eclipse.che.api.workspace.server;
 public interface WorkspaceFSStorageCleaner {
 
     /**
-     * Removes workspace project folder with all data by {@code workspaceId}. Note: all user's projects will be deleted.
+     * Removes workspace folder with projects by {@code workspaceId}. It can be potentially long time operation
+     * (if workspace contains a lot of files or server is busy to done this task quickly), so it should be asynchronous operation.
      *
      * @param workspaceId
      *         unique workspaceId identifier
