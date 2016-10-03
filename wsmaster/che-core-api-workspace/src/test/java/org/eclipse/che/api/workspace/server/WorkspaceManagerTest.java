@@ -318,6 +318,7 @@ public class WorkspaceManagerTest {
 
         workspaceManager.removeWorkspace(workspace.getId());
 
+        verify(workspaceFSStorageCleaner).clear(workspace.getId());
         verify(workspaceDao).remove(workspace.getId());
     }
 
@@ -528,6 +529,46 @@ public class WorkspaceManagerTest {
         // then
         verify(runtimes, timeout(2000)).stop(workspace.getId());
         assertNotNull(workspace.getAttributes().get(UPDATED_ATTRIBUTE_NAME));
+    }
+
+    @Test
+    public void shouldNotCreateSnapshotIfWorkspaceIsTemporaryAndAutoCreateSnapshotActivated() throws Exception {
+        final WorkspaceImpl workspace = workspaceManager.createWorkspace(createConfig(), NAMESPACE);
+        workspace.getAttributes().put(Constants.AUTO_CREATE_SNAPSHOT, "true");
+        when(workspaceDao.get(workspace.getId())).thenReturn(workspace);
+        final RuntimeDescriptor descriptor = createDescriptor(workspace, RUNNING);
+        when(runtimes.get(any())).thenReturn(descriptor);
+        SnapshotImpl oldSnapshot = mock(SnapshotImpl.class);
+        when(snapshotDao.getSnapshot(eq(workspace.getId()),
+                                     eq(workspace.getConfig().getDefaultEnv()),
+                                     anyString()))
+                .thenReturn(oldSnapshot);
+        workspace.setTemporary(true);
+
+        workspaceManager.stopWorkspace(workspace.getId());
+
+        verify(workspaceManager, timeout(2000).never()).createSnapshotSync(anyObject(), anyString(), anyString());
+        verify(runtimes, timeout(2000)).stop(workspace.getId());
+    }
+
+    @Test
+    public void shouldNotCreateSnapshotIfWorkspaceIsTemporaryAndAutoCreateSnapshotDisactivated() throws Exception {
+        final WorkspaceImpl workspace = workspaceManager.createWorkspace(createConfig(), NAMESPACE);
+        workspace.getAttributes().put(Constants.AUTO_CREATE_SNAPSHOT, "false");
+        when(workspaceDao.get(workspace.getId())).thenReturn(workspace);
+        final RuntimeDescriptor descriptor = createDescriptor(workspace, RUNNING);
+        when(runtimes.get(any())).thenReturn(descriptor);
+        SnapshotImpl oldSnapshot = mock(SnapshotImpl.class);
+        when(snapshotDao.getSnapshot(eq(workspace.getId()),
+                                     eq(workspace.getConfig().getDefaultEnv()),
+                                     anyString()))
+                .thenReturn(oldSnapshot);
+        workspace.setTemporary(true);
+
+        workspaceManager.stopWorkspace(workspace.getId());
+
+        verify(workspaceManager, timeout(2000).never()).createSnapshotSync(anyObject(), anyString(), anyString());
+        verify(runtimes, timeout(2000)).stop(workspace.getId());
     }
 
     @Test
