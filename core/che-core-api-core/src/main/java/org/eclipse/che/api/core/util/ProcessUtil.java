@@ -10,11 +10,19 @@
  *******************************************************************************/
 package org.eclipse.che.api.core.util;
 
+import com.google.common.base.Joiner;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static java.lang.String.format;
 
 /**
  * Helpers to manage system processes.
@@ -23,6 +31,8 @@ import java.util.concurrent.TimeoutException;
  * @author Alexander Garagatyi
  */
 public final class ProcessUtil {
+
+    private static final Logger         LOG             = LoggerFactory.getLogger(ProcessUtil.class);
     private static final ProcessManager PROCESS_MANAGER = ProcessManager.newInstance();
 
     /**
@@ -92,29 +102,23 @@ public final class ProcessUtil {
             throws TimeoutException, IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(commandLine).redirectErrorStream(true);
 
-        // process will be stopped after timeout
-        Watchdog watcher = new Watchdog(timeout, timeUnit);
-        Process process;
-        try {
-            process = pb.start();
+        Process process = pb.start();
 
-            final ValueHolder<Boolean> isTimeoutExceeded = new ValueHolder<>(false);
-            watcher.start(() -> {
-                isTimeoutExceeded.set(true);
-                ProcessUtil.kill(process);
-            });
-
-            // consume logs until process ends
-            process(process, outputConsumer);
-
-            process.waitFor(timeout, timeUnit);
-
-            if (isTimeoutExceeded.get()) {
-                throw new TimeoutException();
+        CompletableFuture.runAsync(() -> {
+            try {
+                // consume logs until process ends
+                process(process, outputConsumer);
+            } catch (IOException e) {
+                LOG.error(format("Failed to complete process '%s'.", Joiner.on(" ").join(commandLine)), e);
             }
-        } finally {
-            watcher.stop();
+        });
+
+        if (!process.waitFor(timeout, timeUnit)) {
+            ProcessUtil.kill(process);
+            throw new TimeoutException(format("Process '%s' was terminated by timeout %s %s.",
+                                              Joiner.on(" ").join(commandLine), timeout, timeUnit.name()));
         }
+
         return process;
     }
 
