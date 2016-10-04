@@ -116,7 +116,7 @@ public final class ProcessUtil {
         if (!process.waitFor(timeout, timeUnit)) {
             ProcessUtil.kill(process);
             throw new TimeoutException(format("Process '%s' was terminated by timeout %s %s.",
-                                              Joiner.on(" ").join(commandLine), timeout, timeUnit.name()));
+                                              Joiner.on(" ").join(commandLine), timeout, timeUnit.name().toLowerCase()));
         }
 
         return process;

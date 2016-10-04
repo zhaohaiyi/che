@@ -10,20 +10,24 @@
  *******************************************************************************/
 package org.eclipse.che.api.workspace.server;
 
+import org.eclipse.che.api.core.model.workspace.Workspace;
+
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 /**
  * This component removes workspace folder with user's projects after delete workspace operation.
- * (see more {@link WorkspaceService#delete}).
  *
  * @author Alexander Andrienko
  */
-public interface WorkspaceFSStorageCleaner {
+public interface WorkspaceFilesCleaner {
 
     /**
-     * Removes workspace folder with projects by {@code workspaceId}. It can be potentially long time operation
-     * (if workspace contains a lot of files or server is busy to done this task quickly), so it should be asynchronous operation.
+     * Removes workspace folder with all projects. Note: all projects data for {@code workspace}
+     * will be lost. Usually used for delete workspace operation.
      *
-     * @param workspaceId
-     *         unique workspaceId identifier
+     * @param workspace
+     *         workspace to clean up files
      */
-    void clear(String workspaceId);
+    void clear(Workspace workspace) throws TimeoutException, InterruptedException, IOException;
 }

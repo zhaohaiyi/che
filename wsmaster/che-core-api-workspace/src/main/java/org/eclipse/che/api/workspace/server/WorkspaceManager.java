@@ -32,7 +32,6 @@ import org.eclipse.che.api.machine.server.model.impl.SnapshotImpl;
 import org.eclipse.che.api.machine.server.spi.Instance;
 import org.eclipse.che.api.workspace.server.WorkspaceRuntimes.RuntimeDescriptor;
 import org.eclipse.che.api.workspace.server.event.WorkspaceCreatedEvent;
-import org.eclipse.che.api.workspace.server.event.WorkspaceRemovedEvent;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceConfigImpl;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceImpl;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceRuntimeImpl;
@@ -88,15 +87,14 @@ public class WorkspaceManager {
     /** This attribute describes time when workspace was last update or started/stopped/recovered. */
     public static final String UPDATED_ATTRIBUTE_NAME = "updated";
 
-    private final WorkspaceDao              workspaceDao;
-    private final WorkspaceRuntimes         runtimes;
-    private final EventService              eventService;
-    private final ExecutorService           executor;
-    private final AccountManager            accountManager;
-    private final boolean                   defaultAutoSnapshot;
-    private final boolean                   defaultAutoRestore;
-    private final SnapshotDao               snapshotDao;
-    private final WorkspaceFSStorageCleaner workspaceFSStorageCleaner;
+    private final WorkspaceDao      workspaceDao;
+    private final WorkspaceRuntimes runtimes;
+    private final EventService      eventService;
+    private final ExecutorService   executor;
+    private final AccountManager    accountManager;
+    private final boolean           defaultAutoSnapshot;
+    private final boolean           defaultAutoRestore;
+    private final SnapshotDao       snapshotDao;
 
     @Inject
     public WorkspaceManager(WorkspaceDao workspaceDao,
@@ -105,8 +103,7 @@ public class WorkspaceManager {
                             AccountManager accountManager,
                             @Named("workspace.runtime.auto_snapshot") boolean defaultAutoSnapshot,
                             @Named("workspace.runtime.auto_restore") boolean defaultAutoRestore,
-                            SnapshotDao snapshotDao,
-                            WorkspaceFSStorageCleaner workspaceFSStorageCleaner) {
+                            SnapshotDao snapshotDao) {
         this.workspaceDao = workspaceDao;
         this.runtimes = workspaceRegistry;
         this.accountManager = accountManager;
@@ -114,7 +111,6 @@ public class WorkspaceManager {
         this.defaultAutoSnapshot = defaultAutoSnapshot;
         this.defaultAutoRestore = defaultAutoRestore;
         this.snapshotDao = snapshotDao;
-        this.workspaceFSStorageCleaner = workspaceFSStorageCleaner;
 
         executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("WorkspaceManager-%d")
                                                                            .setDaemon(true)
@@ -330,10 +326,7 @@ public class WorkspaceManager {
             throw new ConflictException("The workspace '" + workspaceId + "' is currently running and cannot be removed.");
         }
 
-        workspaceFSStorageCleaner.clear(workspaceId);
-
         workspaceDao.remove(workspaceId);
-        eventService.publish(new WorkspaceRemovedEvent(workspaceId));
         LOG.info("Workspace '{}' removed by user '{}'", workspaceId, sessionUserNameOr("undefined"));
     }
 
@@ -676,7 +669,6 @@ public class WorkspaceManager {
             try {
                 runtimes.stop(workspace.getId());
                 if (workspace.isTemporary()) {
-                    workspaceFSStorageCleaner.clear(workspace.getId());
                     workspaceDao.remove(workspace.getId());
                 } else {
                     workspace.getAttributes().put(UPDATED_ATTRIBUTE_NAME, Long.toString(currentTimeMillis()));

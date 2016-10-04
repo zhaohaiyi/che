@@ -8,15 +8,16 @@
  * Contributors:
  *   Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.che.plugin.docker.machine;
+package org.eclipse.che.plugin.docker.machine.cleaner;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
+import org.eclipse.che.api.core.model.workspace.Workspace;
 import org.eclipse.che.api.core.util.FileCleaner;
-import org.eclipse.che.api.workspace.server.WorkspaceFSStorageCleaner;
-import org.eclipse.che.plugin.docker.machine.node.WorkspaceFolderPathProvider;
+import org.eclipse.che.api.workspace.server.WorkspaceFilesCleaner;
+import org.eclipse.che.plugin.docker.machine.local.node.provider.LocalWorkspaceFolderPathProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,36 +25,36 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Local implementation of the {@link WorkspaceFSStorageCleaner}.
+ * Local implementation of the {@link WorkspaceFilesCleaner}.
  *
  * @author Alexander Andrienko
  */
 @Singleton
-public class LocalWorkspaceFSStorageCleanerImpl implements WorkspaceFSStorageCleaner {
+public class LocalWorkspaceFilesCleaner implements WorkspaceFilesCleaner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalWorkspaceFSStorageCleanerImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalWorkspaceFilesCleaner.class);
 
-    private final WorkspaceFolderPathProvider workspaceFolderPathProvider;
+    private final LocalWorkspaceFolderPathProvider workspaceFolderPathProvider;
 
     @Inject(optional = true)
     @Named("host.projects.root")
     private String hostProjectsFolder;
 
     @Inject
-    public LocalWorkspaceFSStorageCleanerImpl(WorkspaceFolderPathProvider workspaceFolderPathProvider) {
+    public LocalWorkspaceFilesCleaner(LocalWorkspaceFolderPathProvider workspaceFolderPathProvider) {
         this.workspaceFolderPathProvider = workspaceFolderPathProvider;
     }
 
     @Override
-    public void clear(String workspaceId) {
+    public void clear(Workspace workspace) {
         try {
-            String workspacePath = workspaceFolderPathProvider.getPath(workspaceId);
+            String workspacePath = workspaceFolderPathProvider.getPathByName(workspace.getConfig().getName());
             File workspaceStorage = new File(workspacePath);
             if (!workspacePath.equals(hostProjectsFolder) && workspaceStorage.exists()) {
                 FileCleaner.addFile(workspaceStorage);
             }
         } catch (IOException e) {
-            LOG.error("Failed to clean up workspace folder for workspace with id: {}. Cause: {}.", workspaceId, e.getMessage());
+            LOG.error("Failed to clean up workspace folder for workspace with id: {}. Cause: {}.", workspace.getId(), e.getMessage());
         }
     }
 }

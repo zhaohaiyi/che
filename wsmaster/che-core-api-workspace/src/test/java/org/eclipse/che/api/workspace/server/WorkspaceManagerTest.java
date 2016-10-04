@@ -113,7 +113,7 @@ public class WorkspaceManagerTest {
     @Mock
     private SnapshotDao                   snapshotDao;
     @Mock
-    private WorkspaceFSStorageCleaner     workspaceFSStorageCleaner;
+    private WorkspaceFilesCleaner         workspaceFilesCleaner;
     @Captor
     private ArgumentCaptor<WorkspaceImpl> workspaceCaptor;
 
@@ -127,8 +127,7 @@ public class WorkspaceManagerTest {
                                                     accountManager,
                                                     false,
                                                     false,
-                                                    snapshotDao,
-                                                    workspaceFSStorageCleaner));
+                                                    snapshotDao));
         when(accountManager.getByName(NAMESPACE)).thenReturn(new AccountImpl("accountId", NAMESPACE, "test"));
         when(accountManager.getByName(NAMESPACE_2)).thenReturn(new AccountImpl("accountId2", NAMESPACE_2, "test"));
         when(workspaceDao.create(any(WorkspaceImpl.class))).thenAnswer(invocation -> invocation.getArguments()[0]);
@@ -318,7 +317,6 @@ public class WorkspaceManagerTest {
 
         workspaceManager.removeWorkspace(workspace.getId());
 
-        verify(workspaceFSStorageCleaner).clear(workspace.getId());
         verify(workspaceDao).remove(workspace.getId());
     }
 
@@ -626,7 +624,6 @@ public class WorkspaceManagerTest {
         workspaceManager.stopWorkspace(workspace.getId());
 
         verify(runtimes, timeout(2000)).stop(workspace.getId());
-        verify(workspaceFSStorageCleaner, timeout(2000)).clear(workspace.getId());
         verify(workspaceDao).remove(workspace.getId());
     }
 
@@ -640,8 +637,7 @@ public class WorkspaceManagerTest {
 
         workspaceManager.startWorkspace(workspace.getId(), null, null);
 
-        verify(workspaceFSStorageCleaner, timeout(2000)).clear(workspace.getId());
-        verify(workspaceDao).remove(workspace.getId());
+        verify(workspaceDao, timeout(2000)).remove(workspace.getId());
     }
 
     @Test
@@ -671,8 +667,7 @@ public class WorkspaceManagerTest {
                                                     accountManager,
                                                     true,
                                                     false,
-                                                    snapshotDao,
-                                                    workspaceFSStorageCleaner));
+                                                    snapshotDao));
         final WorkspaceImpl workspace = workspaceManager.createWorkspace(createConfig(), NAMESPACE);
         when(workspaceDao.get(workspace.getId())).thenReturn(workspace);
         final RuntimeDescriptor descriptor = createDescriptor(workspace, RUNNING);
@@ -699,8 +694,7 @@ public class WorkspaceManagerTest {
                                                     accountManager,
                                                     false,
                                                     true,
-                                                    snapshotDao,
-                                                    workspaceFSStorageCleaner));
+                                                    snapshotDao));
         final WorkspaceImpl workspace = workspaceManager.createWorkspace(createConfig(), NAMESPACE);
         when(workspaceDao.get(workspace.getId())).thenReturn(workspace);
         when(runtimes.get(any())).thenThrow(new NotFoundException(""));

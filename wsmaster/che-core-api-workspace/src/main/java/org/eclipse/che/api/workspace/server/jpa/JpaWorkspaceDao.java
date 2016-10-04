@@ -22,6 +22,7 @@ import org.eclipse.che.api.core.notification.EventSubscriber;
 import org.eclipse.che.api.machine.server.model.impl.SnapshotImpl;
 import org.eclipse.che.api.machine.server.spi.SnapshotDao;
 import org.eclipse.che.api.workspace.server.event.BeforeWorkspaceRemovedEvent;
+import org.eclipse.che.api.workspace.server.event.WorkspaceRemovedEvent;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceImpl;
 import org.eclipse.che.api.workspace.server.spi.WorkspaceDao;
 import org.slf4j.Logger;
@@ -49,6 +50,8 @@ public class JpaWorkspaceDao implements WorkspaceDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(JpaWorkspaceDao.class);
 
+    @Inject
+    private EventService            eventService;
     @Inject
     private Provider<EntityManager> manager;
 
@@ -163,6 +166,7 @@ public class JpaWorkspaceDao implements WorkspaceDao {
         if (workspace != null) {
             manager.get().remove(workspace);
         }
+        eventService.publish(new WorkspaceRemovedEvent(workspace));
     }
 
     @Transactional
