@@ -18,8 +18,6 @@ import org.eclipse.che.api.core.model.workspace.Workspace;
 import org.eclipse.che.api.core.util.FileCleaner;
 import org.eclipse.che.api.workspace.server.WorkspaceFilesCleaner;
 import org.eclipse.che.plugin.docker.machine.local.node.provider.LocalWorkspaceFolderPathProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +29,6 @@ import java.io.IOException;
  */
 @Singleton
 public class LocalWorkspaceFilesCleaner implements WorkspaceFilesCleaner {
-
-    private static final Logger LOG = LoggerFactory.getLogger(LocalWorkspaceFilesCleaner.class);
 
     private final LocalWorkspaceFolderPathProvider workspaceFolderPathProvider;
 
@@ -46,15 +42,11 @@ public class LocalWorkspaceFilesCleaner implements WorkspaceFilesCleaner {
     }
 
     @Override
-    public void clear(Workspace workspace) {
-        try {
-            String workspacePath = workspaceFolderPathProvider.getPathByName(workspace.getConfig().getName());
-            File workspaceStorage = new File(workspacePath);
-            if (!workspacePath.equals(hostProjectsFolder) && workspaceStorage.exists()) {
-                FileCleaner.addFile(workspaceStorage);
-            }
-        } catch (IOException e) {
-            LOG.error("Failed to clean up workspace folder for workspace with id: {}. Cause: {}.", workspace.getId(), e.getMessage());
+    public void clear(Workspace workspace) throws IOException {
+        String workspacePath = workspaceFolderPathProvider.getPathByName(workspace.getConfig().getName());
+        File workspaceStorage = new File(workspacePath);
+        if (!workspacePath.equals(hostProjectsFolder) && workspaceStorage.exists()) {
+            FileCleaner.addFile(workspaceStorage);
         }
     }
 }
