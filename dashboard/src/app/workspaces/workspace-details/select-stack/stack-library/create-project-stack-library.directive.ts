@@ -11,10 +11,17 @@
 'use strict';
 
 /**
- * Defines a directive for displaying select stack widget.
- * @author Oleksii Orel
+ * @ngdoc directive
+ * @name projects.create.directive:createProjectStackLibrary
+ * @restrict E
+ * @element
+ *
+ * @description
+ * `<create-project-stack-library></create-project-stack-library>` for creating new projects from stack library.
+ *
+ * @author Florent Benoit
  */
-export class WorkspaceSelectStack {
+export class CreateProjectStackLibrary {
 
   /**
    * Default constructor that is using resource
@@ -22,21 +29,15 @@ export class WorkspaceSelectStack {
    */
   constructor() {
     this.restrict = 'E';
-    this.templateUrl = 'app/workspaces/create-workspace/select-stack/workspace-select-stack.html';
-    this.replace = true;
+    this.templateUrl = 'app/workspaces/workspace-details/select-stack/stack-library/create-project-stack-library.html';
+
+    this.controller = 'CreateProjectStackLibraryController';
+    this.controllerAs = 'createProjectStackLibraryCtrl';
     this.bindToController = true;
-    this.controller = 'WorkspaceSelectStackController';
-    this.controllerAs = 'workspaceSelectStackCtrl';
 
     // scope values
     this.scope = {
-      tabName: '=cheTabName',
-      onTabChange: '&cheOnTabChange',
-      stack: '=cheStack',
-      onStackChange: '&cheStackChange',
-      recipeScript: '=cheRecipeScript',
-      recipeUrl: '=cheRecipeUrl',
-      recipeFormat: '=cheRecipeFormat'
+      tabName: '@cheTabName'
     };
 
   }

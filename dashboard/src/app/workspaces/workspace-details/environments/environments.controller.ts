@@ -9,6 +9,8 @@
  *   Codenvy, S.A. - initial API and implementation
  */
 'use strict';
+import {CheEnvironmentRegistry} from '../../../../components/api/environment/che-environment-registry.factory';
+import {EnvironmentManager} from '../../../../components/api/environment/environment-manager';
 
 /**
  * @ngdoc controller
@@ -17,26 +19,34 @@
  * @author Oleksii Kurinnyi
  */
 export class WorkspaceEnvironmentsController {
-  cheEnvironmentRegistry;
-  environmentManager;
+  cheEnvironmentRegistry: CheEnvironmentRegistry;
+  environmentManager: EnvironmentManager;
 
-  editorOptions;
+  editorOptions: {
+    lineWrapping: boolean,
+    lineNumbers: boolean,
+    readOnly: boolean,
+    mode?: string,
+    gutters: any[],
+    onLoad: Function
+  };
 
-  workspaceConfig;
-  environment;
+  workspaceConfig: any;
+  environment: any;
   environmentName: string;
   newEnvironmentName: string;
   recipeType: string;
-  machines: Array<any>;
-  machinesViewStatus;
+  machines: any[];
+  machinesViewStatus: any;
+  devMachineName: string;
 
-  environmentOnChange;
+  environmentOnChange: Function;
 
   /**
    * Default constructor that is using resource injection
    * @ngInject for Dependency injection
    */
-  constructor($scope, $timeout, cheEnvironmentRegistry) {
+  constructor($scope: ng.IScope, $timeout: ng.ITimeoutService, cheEnvironmentRegistry: CheEnvironmentRegistry) {
     this.cheEnvironmentRegistry = cheEnvironmentRegistry;
 
     this.editorOptions = {
@@ -44,7 +54,7 @@ export class WorkspaceEnvironmentsController {
       lineNumbers: false,
       readOnly: true,
       gutters: [],
-      onLoad: (editor) => {
+      onLoad: (editor: any) => {
         $timeout(() => {
           editor.refresh();
         }, 1000);
@@ -54,16 +64,22 @@ export class WorkspaceEnvironmentsController {
     $scope.$watch(() => {
       return this.workspaceConfig.environments;
     }, () => {
-      this.init();
+      if (Object.keys(this.workspaceConfig.environments).length > 0) {
+        this.init();
+      }
     });
   }
 
   /**
    * Sets initial values
    */
-  init() {
+  init(): void {
     this.newEnvironmentName = this.environmentName;
     this.environment = this.workspaceConfig.environments[this.environmentName];
+
+    if (!this.environment.recipe) {
+      return;
+    }
 
     this.recipeType = this.environment.recipe.type;
     this.environmentManager = this.cheEnvironmentRegistry.getEnvironmentManager(this.recipeType);
@@ -71,6 +87,7 @@ export class WorkspaceEnvironmentsController {
     this.editorOptions.mode = this.environmentManager.editorMode;
 
     this.machines = this.environmentManager.getMachines(this.environment);
+    this.devMachineName = this.getDevMachineName();
 
     if (!this.machinesViewStatus[this.environmentName]) {
       this.machinesViewStatus[this.environmentName] = {};
@@ -83,7 +100,7 @@ export class WorkspaceEnvironmentsController {
    * @param name {string} environment name to validate
    * @returns {boolean}
    */
-  isUnique(name) {
+  isUnique(name: string): boolean {
     return name === this.environmentName || !this.workspaceConfig.environments[name];
   }
 
@@ -91,7 +108,7 @@ export class WorkspaceEnvironmentsController {
    * Updates name of environment
    * @param isFormValid {boolean}
    */
-  updateEnvironmentName(isFormValid) {
+  updateEnvironmentName(isFormValid: boolean): void {
     if (!isFormValid || this.newEnvironmentName === this.environmentName) {
       return;
     }
@@ -110,19 +127,38 @@ export class WorkspaceEnvironmentsController {
     this.doUpdateEnvironments();
   }
 
-  changeMachineDev(machineName) {
+  /**
+   * Returns name of machine which includes 'ws-agent'
+   *
+   * @returns {string} name of dev machine
+   */
+  getDevMachineName(): string {
+    let devMachine: any = this.machines.find((machine: any) => {
+      return this.environmentManager.isDev(machine);
+    });
+
+    return devMachine ? devMachine.name : '';
+  }
+
+  /**
+   * Add 'ws-agent' to list of agents of specified machine and remove it from lists of agents of other machines.
+   *
+   * @param machineName
+   * @returns {ng.IPromise<any>}
+   */
+  changeMachineDev(machineName: string): ng.IPromise<any> {
     if (!machineName) {
       return;
     }
 
     // remove ws-agent from machine which is the dev machine now
-    this.machines.forEach((machine) => {
+    this.machines.forEach((machine: any) => {
       if (this.environmentManager.isDev(machine)) {
         this.environmentManager.setDev(machine, false);
       }
     });
 
-    let machine = this.machines.find(machine => {
+    let machine = this.machines.find((machine: any) => {
       return machine.name === machineName;
     });
 
@@ -140,9 +176,10 @@ export class WorkspaceEnvironmentsController {
 
   /**
    * Callback which is called in order to update environment config
-   * @returns {Promise}
+   *
+   * @returns {ng.IPromise<any>}
    */
-  updateEnvironmentConfig() {
+  updateEnvironmentConfig(): ng.IPromise<any> {
     let newEnvironment = this.environmentManager.getEnvironment(this.environment, this.machines);
     this.workspaceConfig.environments[this.newEnvironmentName] = newEnvironment;
     this.environment = newEnvironment;
@@ -153,9 +190,10 @@ export class WorkspaceEnvironmentsController {
    * Callback which is called in order to rename specified machine
    * @param oldName
    * @param newName
-   * @returns {*}
+   *
+   * @returns {ng.IPromise<any>}
    */
-  updateMachineName(oldName, newName) {
+  updateMachineName(oldName: string, newName: string): ng.IPromise<any> {
     let newEnvironment = this.environmentManager.renameMachine(this.environment, oldName, newName);
     this.workspaceConfig.environments[this.newEnvironmentName] = newEnvironment;
 
@@ -164,27 +202,29 @@ export class WorkspaceEnvironmentsController {
 
     return this.doUpdateEnvironments().then(() => {
       this.init();
-    })
+    });
   }
 
   /**
    * Callback which is called in order to delete specified machine
+   *
    * @param name
-   * @returns {*}
+   * @returns {ng.IPromise<any>}
    */
-  deleteMachine(name) {
+  deleteMachine(name: string): ng.IPromise<any> {
     let newEnvironment = this.environmentManager.deleteMachine(this.environment, name);
     this.workspaceConfig.environments[this.newEnvironmentName] = newEnvironment;
     return this.doUpdateEnvironments().then(() => {
       this.init();
-    })
+    });
   }
 
   /**
    * Calls parent controller's callback to update environment
-   * @returns {IPromise<TResult>|*|Promise.<TResult>}
+   *
+   * @returns {ng.IPromise<any>}
    */
-  doUpdateEnvironments() {
+  doUpdateEnvironments(): ng.IPromise<any> {
     return this.environmentOnChange();
   }
 

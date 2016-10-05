@@ -22,7 +22,7 @@ export class WorkspaceRecipe {
    */
   constructor() {
     this.restrict = 'E';
-    this.templateUrl = 'app/workspaces/create-workspace/select-stack/recipe/workspace-recipe.html';
+    this.templateUrl = 'app/workspaces/workspace-details/select-stack/recipe/workspace-recipe.html';
     this.replace = false;
 
     this.controller = 'WorkspaceRecipeController';
