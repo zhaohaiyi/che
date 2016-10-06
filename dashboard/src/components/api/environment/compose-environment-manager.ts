@@ -144,7 +144,7 @@ export class ComposeEnvironmentManager extends EnvironmentManager {
       } else if (environment.machines) {
         machineNames = Object.keys(environment.machines);
       }
-    } else {
+    } else if (environment.recipe.location) {
       machineNames = Object.keys(environment.machines);
     }
 

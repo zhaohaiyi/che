@@ -33,6 +33,8 @@ export class WorkspaceEnvironments {
   bindToController = true;
 
   scope = {
+    workspaceCreationFlow: '=',
+    workspaceName: '=',
     environmentName: '=',
     machinesViewStatus: '=',
     workspaceConfig: '=',

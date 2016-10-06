@@ -63,8 +63,7 @@
           </che-label-container>
 
           <!-- Status -->
-          <che-label-container che-label-name="State"
-                               ng-if="workspaceDetailsController.isCreationFlow === false">
+          <che-label-container che-label-name="State">
             <div layout="column">
               <workspace-status che-status="workspaceDetailsController.getWorkspaceStatus()"></workspace-status>
               <div flex class="workspace-details-description"
@@ -73,11 +72,11 @@
               </div>
               <div layout="row" class="workspace-details-action-buttons">
                 <div>
-                  <che-button-default ng-disabled="(workspaceDetailsController.getWorkspaceStatus() === 'STARTING')"
+                  <che-button-default ng-disabled="(workspaceDetailsController.isCreationFlow || workspaceDetailsController.getWorkspaceStatus() === 'STARTING')"
                                       ng-show="(workspaceDetailsController.getWorkspaceStatus() !== 'RUNNING' && workspaceDetailsController.getWorkspaceStatus() !== 'STOPPING')"
                                       che-button-title="Run" name="runButton"
                                       ng-click="workspaceDetailsController.runWorkspace()"></che-button-default>
-                  <che-button-default ng-disabled="(workspaceDetailsController.getWorkspaceStatus() === 'STOPPING')"
+                  <che-button-default ng-disabled="(workspaceDetailsController.isCreationFlow || workspaceDetailsController.getWorkspaceStatus() === 'STOPPING')"
                                       ng-show="(workspaceDetailsController.getWorkspaceStatus() === 'RUNNING' || workspaceDetailsController.getWorkspaceStatus() === 'STOPPING')"
                                       che-button-title="Stop" name="stopButton"
                                       ng-click="workspaceDetailsController.stopWorkspace()"></che-button-default>
@@ -92,19 +91,18 @@
           </che-label-container>
 
           <!-- Export workspace -->
-          <che-label-container che-label-name="Export workspace"
-                               ng-if="workspaceDetailsController.isCreationFlow === false">
+          <che-label-container che-label-name="Export workspace">
             <export-workspace workspace-id="{{workspaceDetailsController.workspaceId}}"
-                              workspace-details="workspaceDetailsController.workspaceDetails"></export-workspace>
+                              workspace-details="workspaceDetailsController.workspaceDetails"
+                              workspace-export-disabled="workspaceDetailsController.isCreationFlow"></export-workspace>
           </che-label-container>
 
           <!-- Delete workspace -->
           <che-label-container class="workspace-details-delete-label"
-                               ng-if="workspaceDetailsController.isCreationFlow === false"
                                che-label-name="Delete workspace"
                                che-label-description="This is irreversible. Deleting your workspace will also delete its projects.">
             <che-button-danger che-button-title="Delete"
-                               ng-disabled="!(workspaceDetailsController.getWorkspaceStatus() === 'RUNNING' || workspaceDetailsController.getWorkspaceStatus() === 'STOPPED' || workspaceDetailsController.getWorkspaceStatus() === 'ERROR')"
+                               ng-disabled="!(workspaceDetailsController.isCreationFlow === false || workspaceDetailsController.getWorkspaceStatus() === 'RUNNING' || workspaceDetailsController.getWorkspaceStatus() === 'STOPPED' || workspaceDetailsController.getWorkspaceStatus() === 'ERROR')"
                                ng-click="workspaceDetailsController.deleteWorkspace($event)"></che-button-danger>
           </che-label-container>
 
@@ -112,24 +110,8 @@
       </md-tab-body>
     </md-tab>
 
-    <!-- Stacks tab -->
-    <md-tab ng-if="workspaceDetailsController.isCreationFlow"
-            ng-disabled="workspaceDetailsController.isTabDisabled(workspaceDetailsController.Tab.Stacks)">
-      <md-tab-label>
-        <span class="che-tab-label-title">Stacks</span>
-      </md-tab-label>
-      <md-tab-body>
-        <ng-form name="workspaceStackForm">
-          <workspace-stacks ng-init="workspaceDetailsController.setForm(workspaceDetailsController.Tab.Stacks, workspaceStackForm)"
-                            workspace-stack-on-change="workspaceDetailsController.changeWorkspaceStack(stack, config)"
-                            workspace-name="workspaceDetailsController.newName"></workspace-stacks>
-        </ng-form>
-      </md-tab-body>
-    </md-tab>
-
     <!-- Runtime Tab -->
-    <md-tab ng-if="workspaceDetailsController.copyWorkspaceDetails.config"
-            ng-disabled="workspaceDetailsController.isTabDisabled(workspaceDetailsController.Tab.Runtime)">
+    <md-tab ng-disabled="workspaceDetailsController.isRuntimeTabDisabled()">
       <md-tab-label>
         <span class="che-tab-label-title">Runtime</span>
       </md-tab-label>
@@ -137,6 +119,8 @@
         <ng-form name="workspaceRuntimeForm">
           <workspace-environments
             ng-init="workspaceDetailsController.setForm(workspaceDetailsController.Tab.Runtime, workspaceRuntimeForm)"
+            workspace-creation-flow="workspaceDetailsController.isCreationFlow"
+            workspace-name="workspaceDetailsController.newName"
             environment-name="workspaceDetailsController.copyWorkspaceDetails.config.defaultEnv"
             workspace-config="workspaceDetailsController.copyWorkspaceDetails.config"
             machines-view-status="workspaceDetailsController.machinesViewStatus"

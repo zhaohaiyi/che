@@ -23,10 +23,7 @@ import {WorkspaceDetailsService} from './workspace-details.service';
  * @author Oleksii Kurinnyi
  */
 
-enum Tab {Settings, Stacks, Runtime}
-
-const MIN_WORKSPACE_RAM: number = Math.pow(1024, 3);
-const DEFAULT_WORKSPACE_RAM: number = 2 * Math.pow(1024, 3);
+enum Tab {Settings, Runtime}
 
 export class WorkspaceDetailsController {
   $location: ng.ILocationService;
@@ -207,7 +204,9 @@ export class WorkspaceDetailsController {
 
     this.copyWorkspaceDetails.config.name = this.newName;
 
-    this.doUpdateWorkspace();
+    if (!this.isCreationFlow) {
+      this.doUpdateWorkspace();
+    }
   }
 
   /**
@@ -216,11 +215,11 @@ export class WorkspaceDetailsController {
    * @returns {String}
    */
   getWorkspaceStatus(): string {
-    let unknownStatus = 'unknown';
     if (this.isCreationFlow) {
-      return unknownStatus;
+      return 'CREATING';
     }
 
+    let unknownStatus = 'unknown';
     let workspace = this.cheWorkspace.getWorkspaceById(this.workspaceId);
     return workspace ? workspace.status : unknownStatus;
   }
@@ -232,43 +231,6 @@ export class WorkspaceDetailsController {
    */
   getSections(): any {
     return this.workspaceDetailsService.getSections();
-  }
-
-  /**
-   * Callback when stack has been changed.
-   *
-   * @param stack {Object}
-   * @param config {object} workspace config
-   */
-  changeWorkspaceStack(stack: any, config: any): void {
-    this.stack = stack;
-    this.workspaceDetails.config = config;
-
-    // for compose recipe
-    // check if there are machines without memory limit
-    let defaultEnv = this.workspaceDetails.config.defaultEnv,
-        environment = this.workspaceDetails.config.environments[defaultEnv];
-    if (environment.recipe && environment.recipe.type === 'compose') {
-      let recipeType = environment.recipe.type,
-          environmentManager = this.cheEnvironmentRegistry.getEnvironmentManager(recipeType);
-      let machines: any = environmentManager.getMachines(environment);
-      machines.forEach((machine: any) => {
-        if (!machine.attributes.memoryLimitBytes || machine.attributes.memoryLimitBytes < MIN_WORKSPACE_RAM) {
-          environmentManager.setMemoryLimit(machine, DEFAULT_WORKSPACE_RAM);
-        }
-      });
-
-      // if recipe contains only one machine
-      // then this is the dev machine
-      if (machines.length === 1) {
-        environmentManager.setDev(machines[0], true);
-      }
-
-      this.workspaceDetails.config.environments[defaultEnv] = environmentManager.getEnvironment(environment, machines);
-    }
-
-    this.machinesViewStatus = {};
-    this.updateWorkspaceData();
   }
 
   /**
@@ -561,30 +523,17 @@ export class WorkspaceDetailsController {
    */
   isCreateButtonDisabled(): boolean {
     let tabs = [Tab.Settings, Tab.Runtime];
-    if (!this.stack) {
-      // custom stack is selected
-      // so it needs to validate also 'stacks' tab
-      tabs.push(Tab.Stacks);
-    }
 
     return this.checkFormsNotValid(tabs);
   }
 
   /**
-   * Returns true when specified tab should be disabled
+   * Returns true when 'Runtime' tab should be disabled
    *
-   * @param tab {number}
    * @returns {boolean}
    */
-  isTabDisabled(tab: number): boolean {
-    switch (tab) {
-      case Tab.Stacks:
-        return this.checkFormsNotValid([Tab.Settings]);
-      case Tab.Runtime:
-        return this.checkFormsNotValid([Tab.Settings]) || (!this.stack && this.checkFormsNotValid([Tab.Stacks]));
-      default:
-        return false;
-    }
+  isRuntimeTabDisabled(): boolean {
+    return this.checkFormsNotValid([Tab.Settings]);
   }
 }
 

@@ -18,6 +18,11 @@ import {EnvironmentManager} from '../../../../components/api/environment/environ
  * @description This class is handling the controller for details of workspace : section environments
  * @author Oleksii Kurinnyi
  */
+
+const MIN_WORKSPACE_RAM: number = Math.pow(1024, 3);
+const MAX_WORKSPACE_RAM: number = 100 * MIN_WORKSPACE_RAM;
+const DEFAULT_WORKSPACE_RAM: number = 2 * MIN_WORKSPACE_RAM;
+
 export class WorkspaceEnvironmentsController {
   cheEnvironmentRegistry: CheEnvironmentRegistry;
   environmentManager: EnvironmentManager;
@@ -62,9 +67,13 @@ export class WorkspaceEnvironmentsController {
     };
 
     $scope.$watch(() => {
-      return this.workspaceConfig.environments;
+      return (this.workspaceConfig && this.workspaceConfig.environments);
     }, () => {
-      if (Object.keys(this.workspaceConfig.environments).length > 0) {
+      if (this.workspaceConfig &&
+        this.workspaceConfig.environments &&
+        this.workspaceConfig.environments[this.environmentName] &&
+        this.workspaceConfig.environments[this.environmentName].recipe &&
+        this.workspaceConfig.environments[this.environmentName].recipe.type) {
         this.init();
       }
     });
@@ -76,10 +85,6 @@ export class WorkspaceEnvironmentsController {
   init(): void {
     this.newEnvironmentName = this.environmentName;
     this.environment = this.workspaceConfig.environments[this.environmentName];
-
-    if (!this.environment.recipe) {
-      return;
-    }
 
     this.recipeType = this.environment.recipe.type;
     this.environmentManager = this.cheEnvironmentRegistry.getEnvironmentManager(this.recipeType);
@@ -217,6 +222,50 @@ export class WorkspaceEnvironmentsController {
     return this.doUpdateEnvironments().then(() => {
       this.init();
     });
+  }
+
+  /**
+   * Callback when stack has been changed.
+   *
+   * @param config {object} workspace config
+   */
+  changeWorkspaceStack(config: any): void {
+    this.workspaceConfig = config;
+
+    if (!this.environmentName) {
+      this.environmentName = config.defaultEnv;
+      this.newEnvironmentName = this.environmentName;
+    } else if (this.newEnvironmentName !== config.defaultEnv) {
+      this.workspaceConfig.environments[this.newEnvironmentName] = this.workspaceConfig.environments[config.defaultEnv];
+      delete this.workspaceConfig.environments[config.defaultEnv];
+
+      this.workspaceConfig.defaultEnv = this.newEnvironmentName;
+    }
+
+    // for compose recipe
+    // check if there are machines without memory limit
+    let environment = this.workspaceConfig.environments[this.environmentName];
+    if (environment.recipe && environment.recipe.type === 'compose') {
+      let recipeType = environment.recipe.type,
+          environmentManager = this.cheEnvironmentRegistry.getEnvironmentManager(recipeType);
+      let machines: any = environmentManager.getMachines(environment);
+      machines.forEach((machine: any) => {
+        if (!machine.attributes.memoryLimitBytes || machine.attributes.memoryLimitBytes < MIN_WORKSPACE_RAM || machine.attributes.memoryLimitBytes > MAX_WORKSPACE_RAM) {
+          environmentManager.setMemoryLimit(machine, DEFAULT_WORKSPACE_RAM);
+        }
+      });
+
+      // if recipe contains only one machine
+      // then this is the dev machine
+      if (machines.length === 1) {
+        environmentManager.setDev(machines[0], true);
+      }
+
+      this.workspaceConfig.environments[this.environmentName] = environmentManager.getEnvironment(environment, machines);
+    }
+
+    this.machinesViewStatus = {};
+    this.doUpdateEnvironments();
   }
 
   /**

@@ -90,10 +90,11 @@ export class WorkspaceStacksController {
     let source = this.getSource();
     let config = this.buildWorkspaceConfig(source);
 
-    this.workspaceStackOnChange({
-      stack: stack,
-      config: config
-    });
+    if (!config.defaultEnv || (!this.stack && !this.recipeFormat)) {
+      return;
+    }
+
+    this.workspaceStackOnChange({config: config});
   }
 
   /**

@@ -38,8 +38,20 @@
     </ng-form>
   </che-label-container>
 
+  <!-- Stacks -->
+  <che-label-container ng-if="workspaceEnvironmentsController.workspaceCreationFlow"
+                       che-label-name="Select Stack"
+                       che-label-description="Stacks are recipes or images used to define your environment runtime. Workspace environments are used to build and run your project.">
+    <ng-form name="workspaceStackForm">
+      <workspace-stacks ng-if="workspaceEnvironmentsController.workspaceName"
+                        workspace-stack-on-change="workspaceEnvironmentsController.changeWorkspaceStack(config)"
+                        workspace-name="workspaceEnvironmentsController.workspaceName"></workspace-stacks>
+    </ng-form>
+  </che-label-container>
+
   <!-- Machines -->
-  <che-label-container che-label-name="Machines"
+  <che-label-container ng-if="workspaceEnvironmentsController.machines.length > 0"
+                       che-label-name="Machines"
                        class="che-label-container-last">
     <ng-form name="workspaceDevMachineForm">
       <div class="workspace-environments-input">
