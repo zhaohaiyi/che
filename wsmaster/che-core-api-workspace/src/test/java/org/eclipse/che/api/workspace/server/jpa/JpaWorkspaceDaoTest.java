@@ -14,7 +14,6 @@ import com.google.inject.Guice;
 
 import org.eclipse.che.account.spi.AccountImpl;
 import org.eclipse.che.api.core.jdbc.jpa.DuplicateKeyException;
-import org.eclipse.che.api.workspace.server.model.impl.ProjectConfigImpl;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceConfigImpl;
 import org.eclipse.che.api.workspace.server.model.impl.WorkspaceImpl;
 import org.testng.annotations.AfterMethod;
@@ -23,10 +22,6 @@ import org.testng.annotations.Test;
 
 import javax.persistence.EntityManager;
 
-import java.util.Collections;
-import java.util.HashMap;
-
-import static java.util.Arrays.asList;
 import static org.eclipse.che.api.workspace.server.spi.tck.WorkspaceDaoTest.createWorkspace;
 import static org.testng.Assert.assertEquals;
 
@@ -58,7 +53,7 @@ public class JpaWorkspaceDaoTest {
         final AccountImpl account = new AccountImpl("accountId", "namespace", "test");
         final WorkspaceImpl workspace = createWorkspace("id", account, "name");
 
-        // Persist the workspace
+        // Persist the account
         manager.getTransaction().begin();
         manager.persist(account);
         manager.getTransaction().commit();
