@@ -10,10 +10,10 @@
  *******************************************************************************/
 package org.eclipse.che.api.workspace.server;
 
+import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.core.model.workspace.Workspace;
 
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * This component removes workspace folder with user's projects after delete workspace operation.
@@ -29,5 +29,5 @@ public interface WorkspaceFilesCleaner {
      * @param workspace
      *         workspace to clean up files
      */
-    void clear(Workspace workspace) throws TimeoutException, InterruptedException, IOException;
+    void clear(Workspace workspace) throws IOException, ServerException;
 }

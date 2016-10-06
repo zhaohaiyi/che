@@ -14,6 +14,7 @@ package org.eclipse.che.plugin.docker.machine.cleaner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Singleton;
 
+import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.core.model.workspace.Workspace;
 import org.eclipse.che.api.core.notification.EventService;
 import org.eclipse.che.api.core.notification.EventSubscriber;
@@ -27,7 +28,6 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Listener for event {@code WorkspaceRemovedEvent}. It is used for clean up workspace file resources.
@@ -57,7 +57,7 @@ public class RemoveWorkspaceListener implements EventSubscriber<WorkspaceRemoved
             Workspace workspace = event.getWorkspace();
             try {
                 workspaceFilesCleaner.clear(workspace);
-            } catch (TimeoutException | IOException | InterruptedException e) {
+            } catch (IOException | ServerException e) {
                 LOG.error("Failed to delete folder for workspace with id: '{}'. Cause: '{}'", workspace.getId(), e.getMessage());
             }
         }));
