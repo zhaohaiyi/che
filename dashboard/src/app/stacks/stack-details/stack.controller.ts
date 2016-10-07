@@ -20,7 +20,7 @@ export class StackController {
   $filter: ng.IFilterService;
   $timeout: ng.ITimeoutService;
   $location: ng.ILocationService;
-  $mdDialog: angular.material.IDialogService;
+  $mdDialog: ng.material.IDialogService;
 
   loading: boolean;
   isLoading: boolean;
@@ -28,12 +28,15 @@ export class StackController {
 
   stackId: string;
   stackName: string;
-  stackContent: string;
+  stackJson: string;
   invalidStack: string;
+
+  separators: any[];
 
   stack: any;
   editorOptions: any;
   changesPromise: any;
+  machinesViewStatus: any;
 
   cheStack;
   cheNotification;
@@ -62,6 +65,8 @@ export class StackController {
         }, 1000);
       }
     };
+
+    this.machinesViewStatus = {};
 
     //Checking creation mode:
     this.isCreation = $route.current.params.stackId === 'create';
@@ -139,10 +144,29 @@ export class StackController {
   }
 
   /**
-   * Update stack's editor content.
+   * Reset stack's tags.
    */
-  updateEditorContent(): void {
-    this.stackContent = this.$filter('json')(this.stack);
+  resetTags(): void {
+    if (!this.stack || !this.stack.tags) {
+      return;
+    }
+    this.stack.tags.length = 0;
+    this.updateJsonFromStack();
+  }
+
+  /**
+   * Update stack's editor json from stack.
+   */
+  updateJsonFromStack(): void {
+    this.stackJson = angular.toJson(this.stack, true);
+  }
+
+  /**
+   * Update stack from stack's editor json.
+   */
+  updateStackFromJson(): void {
+    this.stack = angular.fromJson(this.stackJson);
+    this.stackName = angular.copy(this.stack.name);
   }
 
   /**
@@ -155,7 +179,7 @@ export class StackController {
 
     delete this.stack.links;
     this.stackName = angular.copy(this.stack.name);
-    this.stackContent = this.$filter('json')(this.stack);
+    this.updateJsonFromStack();
   }
 
   /**
@@ -165,11 +189,11 @@ export class StackController {
   updateStack(isFormValid: boolean) {
     if (this.isCreation) {
       this.stack.name = this.stackName;
-      this.updateEditorContent();
+      this.updateJsonFromStack();
       return;
     }
 
-    this.updateEditorContent();
+    this.updateJsonFromStack();
 
     if (this.changesPromise) {
       this.$timeout.cancel(this.changesPromise);
@@ -181,7 +205,7 @@ export class StackController {
 
     this.changesPromise = this.$timeout(() => {
       this.isLoading = true;
-      let stackData = angular.copy(this.stack);
+      let stackData: any = angular.copy(this.stack);
       stackData.name = this.stackName;
 
       this.cheStack.updateStack(this.stack.id, stackData).then((stack) => {
@@ -207,7 +231,7 @@ export class StackController {
       return;
     }
 
-    this.cheStack.updateStack(this.stack.id, this.stackContent).then((stack) => {
+    this.cheStack.updateStack(this.stack.id, this.stackJson).then((stack) => {
       this.cheNotification.showInfo('Stack is successfully updated.');
       this.stack = stack;
       this.isLoading = false;
@@ -224,7 +248,7 @@ export class StackController {
    * Creates new stack.
    */
   createStack(): void {
-    this.cheStack.createStack(this.stackContent).then((stack) => {
+    this.cheStack.createStack(this.stackJson).then((stack) => {
       this.cheNotification.showInfo('Stack is successfully created.');
       this.stack = stack;
       this.isLoading = false;
