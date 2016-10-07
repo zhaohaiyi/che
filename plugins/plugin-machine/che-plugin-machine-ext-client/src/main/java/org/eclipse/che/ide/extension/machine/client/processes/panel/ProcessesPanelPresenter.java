@@ -105,7 +105,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
     public static final  String SSH_PORT                    = "22";
     private static final String DEFAULT_TERMINAL_NAME       = "Terminal";
 
-    public static final String TERMINAL_AGENT              = "org.eclipse.che.terminal";
+    public static final String TERMINAL_AGENT               = "org.eclipse.che.terminal";
     public static final String SSH_AGENT                    = "org.eclipse.che.ssh";
 
     final Map<String, OutputConsole>     consoles;
@@ -218,11 +218,15 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
     @Override
     public void onMachineCreating(MachineStateEvent event) {
         workspaceAgent.setActivePart(this);
-        addMachineNode(event.getMachine());
+        provideMachineNode(event.getMachine(), false);
     }
 
     @Override
     public void onMachineRunning(MachineStateEvent event) {
+        final MachineEntity machine = event.getMachine();
+        if (!machine.isDev()) {
+            provideMachineNode(machine, true);
+        }
     }
 
     @Override
@@ -671,30 +675,44 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
         return false;
     }
 
-    private ProcessTreeNode addMachineNode(MachineEntity machine) {
-        if (machineNodes.containsKey(machine.getId())) {
-            return machineNodes.get(machine.getId());
+    /**
+     * Provides machine node:
+     * <li>creates new machine node when this one not exist or {@code replace} is {@code true}</li>
+     * <li>returns old machine node when this one exist and {@code replace} is {@code false}</li>
+     *
+     * @param machine
+     *         machine to creating node
+     * @param replace
+     *         existed node will be replaced when {@code replace} is {@code true}
+     * @return machine node
+     */
+    private ProcessTreeNode provideMachineNode(@NotNull MachineEntity machine, boolean replace) {
+        final String machineId = machine.getId();
+        if (!replace && machineNodes.containsKey(machineId)) {
+            return machineNodes.get(machineId);
         }
 
-        final ProcessTreeNode machineNode = new ProcessTreeNode(MACHINE_NODE, rootNode, machine, null, new ArrayList<ProcessTreeNode>());
-        machineNode.setRunning(true);
-        machineNode.setHasTerminalAgent(hasAgent(machine.getDisplayName(), TERMINAL_AGENT));
-        machineNode.setHasSSHAgent(hasAgent(machine.getDisplayName(), SSH_AGENT));
-        machineNodes.put(machine.getId(), machineNode);
+        final ProcessTreeNode existedMachineNode = machineNodes.remove(machineId);
+        final ProcessTreeNode newMachineNode = new ProcessTreeNode(MACHINE_NODE, rootNode, machine, null, new ArrayList<ProcessTreeNode>());
+        newMachineNode.setRunning(true);
+        newMachineNode.setHasTerminalAgent(hasAgent(machine.getDisplayName(), TERMINAL_AGENT));
+        newMachineNode.setHasSSHAgent(hasAgent(machine.getDisplayName(), SSH_AGENT));
+        machineNodes.put(machineId, newMachineNode);
 
-        if (rootNodes.contains(machineNode)) {
-            rootNodes.remove(machineNode);
+        if (rootNodes.contains(existedMachineNode)) {
+            rootNodes.remove(existedMachineNode);
         }
 
-        rootNodes.add(machineNode);
-
-        OutputConsole outputConsole = commandConsoleFactory.create(machine.getConfig().getName());
-
-        addOutputConsole(machine.getId(), machineNode, outputConsole, true);
+        rootNodes.add(newMachineNode);
 
         view.setProcessesData(rootNode);
 
-        return machineNode;
+        if (existedMachineNode == null) {
+            final OutputConsole outputConsole = commandConsoleFactory.create(machine.getConfig().getName());
+            addOutputConsole(machineId, newMachineNode, outputConsole, true);
+        }
+
+        return newMachineNode;
     }
 
     private List<MachineEntity> getMachines(Workspace workspace) {
@@ -726,9 +744,9 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
         return null;
     }
 
+    //TODO: need to improve this method. Avoid duplicate for(;;).
+    //Then we get output form machine it must be added to process tree already.
     @Override
-    //TODO: need to improve this method. Avoid duplicate for(;;). 
-    //Then we get output form machine it must be added to process tree already.                                                                      
     public void onEnvironmentOutputEvent(EnvironmentOutputEvent event) {
         final String content = event.getContent();
         final String machineName = event.getMachineName();
@@ -742,7 +760,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
         final List<MachineEntity> machines = getMachines(appContext.getWorkspace());
         for (MachineEntity machineEntity : machines) {
             if (machineName.equals(machineEntity.getDisplayName())) {
-                ProcessTreeNode machineNode = addMachineNode(machineEntity);
+                ProcessTreeNode machineNode = provideMachineNode(machineEntity, false);
                 printMachineOutput(machineNode.getId(), content);
             }
         }
@@ -765,12 +783,12 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
 
         ProcessTreeNode machineToSelect = null;
         if (devMachine != null) {
-            machineToSelect = addMachineNode(devMachine);
+            machineToSelect = provideMachineNode(devMachine, true);
             machines.remove(devMachine);
         }
 
         for (MachineEntity machine : machines) {
-            addMachineNode(machine);
+            provideMachineNode(machine, true);
         }
 
         if (machineToSelect != null) {
