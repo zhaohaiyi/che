@@ -29,6 +29,7 @@ import org.eclipse.che.plugin.gdb.server.parser.GdbOutput;
 import org.eclipse.che.plugin.gdb.server.parser.GdbPType;
 import org.eclipse.che.plugin.gdb.server.parser.GdbPrint;
 import org.eclipse.che.plugin.gdb.server.parser.GdbRun;
+import org.eclipse.che.plugin.gdb.server.parser.GdbSuspend;
 import org.eclipse.che.plugin.gdb.server.parser.GdbTargetRemote;
 import org.eclipse.che.plugin.gdb.server.parser.GdbVersion;
 import org.slf4j.Logger;
@@ -79,6 +80,16 @@ public class Gdb extends GdbProcess {
     public GdbRun run() throws IOException, InterruptedException, DebuggerException {
         GdbOutput gdbOutput = sendCommand("run");
         return GdbRun.parse(gdbOutput);
+    }
+
+    public GdbSuspend suspend() throws IOException, InterruptedException, DebuggerException {
+        if (pid > 0) {
+            Runtime.getRuntime().exec("kill -SIGINT " + pid).waitFor();
+            GdbOutput gdbOutput = sendCommand("info line");
+            return GdbSuspend.parse(gdbOutput);
+        }
+
+        throw new DebuggerException("Unable suspend debugger session. Process not found.");
     }
 
     /**

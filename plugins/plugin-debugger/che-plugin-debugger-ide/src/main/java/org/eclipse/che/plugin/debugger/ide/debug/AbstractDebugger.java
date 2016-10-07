@@ -26,6 +26,7 @@ import org.eclipse.che.api.debug.shared.dto.action.StartActionDto;
 import org.eclipse.che.api.debug.shared.dto.action.StepIntoActionDto;
 import org.eclipse.che.api.debug.shared.dto.action.StepOutActionDto;
 import org.eclipse.che.api.debug.shared.dto.action.StepOverActionDto;
+import org.eclipse.che.api.debug.shared.dto.action.SuspendActionDto;
 import org.eclipse.che.api.debug.shared.dto.event.BreakpointActivatedEventDto;
 import org.eclipse.che.api.debug.shared.dto.event.DebuggerEventDto;
 import org.eclipse.che.api.debug.shared.dto.event.SuspendEventDto;
@@ -53,6 +54,7 @@ import org.eclipse.che.ide.api.debug.BreakpointManager;
 import org.eclipse.che.ide.api.debug.DebuggerServiceClient;
 import org.eclipse.che.ide.api.machine.events.WsAgentStateEvent;
 import org.eclipse.che.ide.api.machine.events.WsAgentStateHandler;
+import org.eclipse.che.ide.api.notification.NotificationManager;
 import org.eclipse.che.ide.api.resources.Project;
 import org.eclipse.che.ide.api.resources.Resource;
 import org.eclipse.che.ide.api.resources.VirtualFile;
@@ -77,6 +79,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.eclipse.che.ide.api.notification.StatusNotification.DisplayMode.FLOAT_MODE;
+import static org.eclipse.che.ide.api.notification.StatusNotification.Status.FAIL;
+import static org.eclipse.che.ide.api.notification.StatusNotification.Status.PROGRESS;
+
 /**
  * The common debugger.
  *
@@ -95,6 +101,7 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
     private final EventBus               eventBus;
     private final ActiveFileHandler      activeFileHandler;
     private final DebuggerManager        debuggerManager;
+    private final NotificationManager    notificationManager;
     private final BreakpointManager      breakpointManager;
     private final String                 debuggerType;
     private final String                 eventChannel;
@@ -112,6 +119,7 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
                             EventBus eventBus,
                             ActiveFileHandler activeFileHandler,
                             DebuggerManager debuggerManager,
+                            NotificationManager notificationManager,
                             BreakpointManager breakpointManager,
                             String type) {
         this.service = service;
@@ -120,6 +128,7 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
         this.eventBus = eventBus;
         this.activeFileHandler = activeFileHandler;
         this.debuggerManager = debuggerManager;
+        this.notificationManager = notificationManager;
         this.breakpointManager = breakpointManager;
         this.observers = new ArrayList<>();
         this.debuggerType = type;
@@ -208,12 +217,16 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
         switch (event.getType()) {
             case SUSPEND:
                 newLocationDto = ((SuspendEventDto)event).getLocation();
+                Log.error(getClass(), "SUSPEND " + newLocationDto);
+                Log.error(getClass(), "SUSPEND " + newLocationDto.getLineNumber());
                 break;
             case BREAKPOINT_ACTIVATED:
+                Log.error(getClass(), "BREAKPOINT_ACTIVATED");
                 BreakpointDto breakpointDto = ((BreakpointActivatedEventDto)event).getBreakpoint();
                 onBreakpointActivated(breakpointDto.getLocation());
                 return;
             case DISCONNECT:
+                Log.error(getClass(), "DISCONNECT");
                 disconnect();
                 return;
             default:
@@ -584,6 +597,19 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
                 }
             });
         }
+    }
+
+    @Override
+    public void suspend() {
+        SuspendActionDto action = dtoFactory.createDto(SuspendActionDto.class);
+        action.setType(Action.TYPE.SUSPEND);
+
+        service.suspend(debugSessionDto.getId(), action).catchError(new Operation<PromiseError>() {
+            @Override
+            public void apply(PromiseError arg) throws OperationException {
+                notificationManager.notify(arg.getMessage(), FAIL, FLOAT_MODE);
+            }
+        });
     }
 
     @Override
