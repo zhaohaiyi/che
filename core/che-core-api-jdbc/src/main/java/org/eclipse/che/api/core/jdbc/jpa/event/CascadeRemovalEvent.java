@@ -8,26 +8,22 @@
  * Contributors:
  *   Codenvy, S.A. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.che.api.user.server.event;
-
-import org.eclipse.che.api.core.jdbc.jpa.event.CascadeRemovalEvent;
-import org.eclipse.che.api.user.server.model.impl.UserImpl;
+package org.eclipse.che.api.core.jdbc.jpa.event;
 
 /**
- * Published before {@link UserImpl user} removed.
+ * Special event type which is needed only for
+ * notification in the process of cascade removing.
  *
- * @author Yevhenii Voevodin
+ * @author Anton Korneta
  */
-public class BeforeUserRemovedEvent extends CascadeRemovalEvent {
+public abstract class CascadeRemovalEvent {
+    private final RemovalContext context;
 
-    private final UserImpl user;
-
-    public BeforeUserRemovedEvent(UserImpl user) {
-        this.user = user;
+    public CascadeRemovalEvent() {
+        this.context = new RemovalContext();
     }
 
-    /** Returns user which is going to be removed. */
-    public UserImpl getUser() {
-        return user;
+    public RemovalContext getContext() {
+        return context;
     }
 }
